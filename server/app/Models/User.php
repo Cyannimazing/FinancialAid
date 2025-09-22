@@ -18,9 +18,18 @@ class User extends Authenticatable
      * @var list<string>
      */
     protected $fillable = [
-        'name',
+        'firstname',
+        'middlename',
+        'lastname',
+        'contact_number',
+        'address',
         'email',
         'password',
+        'status',
+        'systemrole_id',
+        'age',
+        'enrolled_school',
+        'school_year',
     ];
 
     /**
@@ -44,5 +53,36 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    public function systemRole()
+    {
+        return $this->belongsTo(SystemRole::class, 'systemrole_id');
+    }
+
+    // Helper methods
+    public function isAdmin()
+    {
+        return $this->systemRole->name === 'admin';
+    }
+
+    public function isDirector()
+    {
+        return $this->systemRole->name === 'director';
+    }
+
+    public function isEmployee()
+    {
+        return $this->systemRole->name === 'employee';
+    }
+
+    public function isBeneficiary()
+    {
+        return $this->systemRole->name === 'beneficiary';
+    }
+
+    public function getFullNameAttribute()
+    {
+        return trim($this->firstname . ' ' . $this->middlename . ' ' . $this->lastname);
     }
 }

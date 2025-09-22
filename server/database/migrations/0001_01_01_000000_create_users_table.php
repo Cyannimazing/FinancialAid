@@ -13,10 +13,22 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
+            $table->string('firstname');
+            $table->string('middlename')->nullable();
+            $table->string('lastname');
+            $table->string('contact_number')->nullable();
+            $table->text('address')->nullable();
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            $table->enum('status', ['active', 'inactive'])->default('active');
+            $table->foreignId('systemrole_id')->constrained('system_role');
+            
+            // Additional fields for beneficiaries (optional)
+            $table->integer('age')->nullable();
+            $table->string('enrolled_school')->nullable();
+            $table->string('school_year')->nullable();
+            
             $table->rememberToken();
             $table->timestamps();
         });
