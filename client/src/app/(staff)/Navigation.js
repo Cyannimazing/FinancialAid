@@ -8,32 +8,12 @@ import ResponsiveNavLink, {
 import { DropdownButton } from '@/components/DropdownLink'
 import { useAuth } from '@/hooks/auth'
 import { usePathname } from 'next/navigation'
-import { useState, useEffect } from 'react'
-import axios from '@/lib/axios'
+import { useState } from 'react'
 
 const Navigation = ({ user }) => {
     const { logout } = useAuth()
-    const pathname = usePathname()
+
     const [open, setOpen] = useState(false)
-    const [facilityId, setFacilityId] = useState(null)
-
-    // Fetch facility ID for navigation
-    useEffect(() => {
-        const fetchFacility = async () => {
-            try {
-                const response = await axios.get('/api/my-facilities')
-                if (response.data.length > 0) {
-                    setFacilityId(response.data[0].id)
-                }
-            } catch (error) {
-                console.error('Error fetching facility for navigation:', error)
-            }
-        }
-
-        if (user) {
-            fetchFacility()
-        }
-    }, [user])
 
     return (
         <nav className="bg-white border-b border-gray-100">
@@ -43,53 +23,18 @@ const Navigation = ({ user }) => {
                     <div className="flex">
                         {/* Logo */}
                         <div className="flex-shrink-0 flex items-center">
-                            <Link href={facilityId ? `/${facilityId}/dashboard` : '/facility-registration'}>
+                            <Link href="/dashboard">
                                 <ApplicationLogo className="block h-10 w-auto fill-current text-gray-600" />
                             </Link>
                         </div>
 
                         {/* Navigation Links */}
                         <div className="hidden space-x-8 sm:-my-px sm:ml-10 sm:flex">
-                            {facilityId ? (
-                                <>
-                                    <NavLink
-                                        href={`/${facilityId}/dashboard`}
-                                        active={pathname === `/${facilityId}/dashboard`}>
-                                        Dashboard
-                                    </NavLink>
-                                    <NavLink
-                                        href={`/${facilityId}/employees`}
-                                        active={pathname === `/${facilityId}/employees`}>
-                                        Employees
-                                    </NavLink>
-                                    <NavLink
-                                        href={`/${facilityId}/roles`}
-                                        active={pathname === `/${facilityId}/roles`}>
-                                        Roles
-                                    </NavLink>
-                                    <NavLink
-                                        href={`/${facilityId}/beneficiaries`}
-                                        active={pathname === `/${facilityId}/beneficiaries`}>
-                                        Beneficiaries
-                                    </NavLink>
-                                    <NavLink
-                                        href={`/${facilityId}/subscription`}
-                                        active={pathname === `/${facilityId}/subscription`}>
-                                        Subscription
-                                    </NavLink>
-                                    <NavLink
-                                        href="/facility-registration"
-                                        active={pathname === '/facility-registration'}>
-                                        Registration
-                                    </NavLink>
-                                </>
-                            ) : (
-                                <NavLink
-                                    href="/facility-registration"
-                                    active={pathname === '/facility-registration'}>
-                                    Register Facility
-                                </NavLink>
-                            )}
+                            <NavLink
+                                href="/dashboard"
+                                active={usePathname() === '/dashboard'}>
+                                Dashboard
+                            </NavLink>
                         </div>
                     </div>
 
@@ -100,7 +45,7 @@ const Navigation = ({ user }) => {
                             width="48"
                             trigger={
                                 <button className="flex items-center text-sm font-medium text-gray-500 hover:text-gray-700 focus:outline-none transition duration-150 ease-in-out">
-                                <div>{user?.firstname} {user?.lastname}</div>
+                                    <div>{user?.name}</div>
 
                                     <div className="ml-1">
                                         <svg
@@ -160,46 +105,11 @@ const Navigation = ({ user }) => {
             {open && (
                 <div className="block sm:hidden">
                     <div className="pt-2 pb-3 space-y-1">
-                        {facilityId ? (
-                            <>
-                                <ResponsiveNavLink
-                                    href={`/${facilityId}/dashboard`}
-                                    active={pathname === `/${facilityId}/dashboard`}>
-                                    Dashboard
-                                </ResponsiveNavLink>
-                                <ResponsiveNavLink
-                                    href={`/${facilityId}/employees`}
-                                    active={pathname === `/${facilityId}/employees`}>
-                                    Employees
-                                </ResponsiveNavLink>
-                                <ResponsiveNavLink
-                                    href={`/${facilityId}/roles`}
-                                    active={pathname === `/${facilityId}/roles`}>
-                                    Roles
-                                </ResponsiveNavLink>
-                                <ResponsiveNavLink
-                                    href={`/${facilityId}/beneficiaries`}
-                                    active={pathname === `/${facilityId}/beneficiaries`}>
-                                    Beneficiaries
-                                </ResponsiveNavLink>
-                                <ResponsiveNavLink
-                                    href={`/${facilityId}/subscription`}
-                                    active={pathname === `/${facilityId}/subscription`}>
-                                    Subscription
-                                </ResponsiveNavLink>
-                                <ResponsiveNavLink
-                                    href="/facility-registration"
-                                    active={pathname === '/facility-registration'}>
-                                    Registration
-                                </ResponsiveNavLink>
-                            </>
-                        ) : (
-                            <ResponsiveNavLink
-                                href="/facility-registration"
-                                active={pathname === '/facility-registration'}>
-                                Register Facility
-                            </ResponsiveNavLink>
-                        )}
+                        <ResponsiveNavLink
+                            href="/dashboard"
+                            active={usePathname() === '/dashboard'}>
+                            Dashboard
+                        </ResponsiveNavLink>
                     </div>
 
                     {/* Responsive Settings Options */}
@@ -223,7 +133,7 @@ const Navigation = ({ user }) => {
 
                             <div className="ml-3">
                                 <div className="font-medium text-base text-gray-800">
-                                    {user?.firstname} {user?.lastname}
+                                    {user?.name}
                                 </div>
                                 <div className="font-medium text-sm text-gray-500">
                                     {user?.email}

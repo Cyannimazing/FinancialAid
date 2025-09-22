@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import axios from '@/lib/axios'
 import Button from '@/components/Button'
@@ -12,10 +12,13 @@ import Header from '@/components/Header'
 const FacilityRegistration = () => {
     const router = useRouter()
     const [isLoading, setIsLoading] = useState(false)
+    const [isCheckingExisting, setIsCheckingExisting] = useState(true)
+    const [existingFacility, setExistingFacility] = useState(null)
     const [errors, setErrors] = useState({})
     
     // Form state
     const [formData, setFormData] = useState({
+        center_id: '',
         center_name: '',
         longitude: '',
         latitude: '',
@@ -23,6 +26,24 @@ const FacilityRegistration = () => {
     })
     
     const [documents, setDocuments] = useState([])
+    
+    // Check if user already has a facility
+    useEffect(() => {
+        const checkExistingFacility = async () => {
+            try {
+                const response = await axios.get('/api/my-facilities')
+                if (response.data.length > 0) {
+                    setExistingFacility(response.data[0])
+                }
+            } catch (error) {
+                console.error('Error checking existing facility:', error)
+            } finally {
+                setIsCheckingExisting(false)
+            }
+        }
+        
+        checkExistingFacility()
+    }, [])
     
     const handleInputChange = (e) => {
         const { name, value } = e.target
@@ -78,8 +99,18 @@ const FacilityRegistration = () => {
                 },
             })
             
-            // Success - redirect to facility dashboard
-            router.push('/facility-dashboard')
+            // Success - redirect to facility dashboard using id
+            if (response.data && response.data.id) {
+                router.push(`/${response.data.id}/dashboard`)
+            } else {
+                // Fallback: refetch facility and redirect
+                const facilityResponse = await axios.get('/api/my-facilities')
+                if (facilityResponse.data.length > 0) {
+                    router.push(`/${facilityResponse.data[0].id}/dashboard`)
+                } else {
+                    router.push('/facility-dashboard')
+                }
+            }
             
         } catch (error) {
             if (error.response?.status === 422) {
@@ -112,6 +143,87 @@ const FacilityRegistration = () => {
         }
     }
     
+    // Show loading state while checking for existing facility
+    if (isCheckingExisting) {
+        return (
+            <>
+                <Header title="Register Facility" />
+                <div className="py-12">
+                    <div className="max-w-4xl mx-auto sm:px-6 lg:px-8">
+                        <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                            <div className="p-6 bg-white border-b border-gray-200 text-center">
+                                <p>Checking existing facilities...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </>
+        )
+    }
+    
+    // Show existing facility message if user already has one
+    if (existingFacility) {
+        return (
+            <>
+                <Header title="Register Facility" />
+                <div className="py-12">
+                    <div className="max-w-4xl mx-auto sm:px-6 lg:px-8">
+                        <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                            <div className="p-6 bg-white border-b border-gray-200">
+                                <h2 className="text-2xl font-bold text-gray-900 mb-6">
+                                    Facility Already Registered
+                                </h2>
+                                
+                                <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                                    <div className="flex items-start">
+                                        <div className="flex-shrink-0">
+                                            <svg className="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                        </div>
+                                        <div className="ml-3">
+                                            <h3 className="text-lg font-medium text-blue-900">
+                                                You have already registered a facility
+                                            </h3>
+                                            <div className="mt-2 text-blue-800">
+                                                <p className="mb-2">Each user can only register one facility. Your registered facility details:</p>
+                                                <div className="bg-white rounded p-4 mt-3">
+                                                    <p><strong>Center ID:</strong> {existingFacility.center_id}</p>
+                                                    <p><strong>Center Name:</strong> {existingFacility.center_name}</p>
+                                                    <p><strong>Status:</strong> 
+                                                        <span className={`ml-2 px-2 py-1 rounded-full text-xs ${
+                                                            existingFacility.isManagable 
+                                                                ? 'bg-green-100 text-green-800' 
+                                                                : 'bg-yellow-100 text-yellow-800'
+                                                        }`}>
+                                                            {existingFacility.isManagable ? 'Approved' : 'Pending Approval'}
+                                                        </span>
+                                                    </p>
+                                                    {existingFacility.description && (
+                                                        <p><strong>Description:</strong> {existingFacility.description}</p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div className="mt-6 flex justify-center">
+                                <Button
+                                    onClick={() => router.push(`/${existingFacility.id}/dashboard`)}
+                                    className="bg-blue-500 hover:bg-blue-700"
+                                >
+                                    Go to Dashboard
+                                </Button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </>
+        )
+    }
+    
     return (
         <>
             <Header title="Register Facility" />
@@ -131,6 +243,30 @@ const FacilityRegistration = () => {
                             )}
                             
                             <form onSubmit={handleSubmit} className="space-y-6">
+                                {/* Center ID */}
+                                <div>
+                                    <Label htmlFor="center_id">
+                                        Center ID *
+                                    </Label>
+                                    <Input
+                                        id="center_id"
+                                        name="center_id"
+                                        type="text"
+                                        value={formData.center_id}
+                                        onChange={handleInputChange}
+                                        className="block mt-1 w-full"
+                                        placeholder="e.g., FAC-001, CENTER-ABC"
+                                        required
+                                    />
+                                    <InputError 
+                                        messages={errors.center_id} 
+                                        className="mt-2" 
+                                    />
+                                    <p className="text-xs text-gray-500 mt-1">
+                                        Enter a unique identifier for your facility
+                                    </p>
+                                </div>
+                                
                                 {/* Center Name */}
                                 <div>
                                     <Label htmlFor="center_name">

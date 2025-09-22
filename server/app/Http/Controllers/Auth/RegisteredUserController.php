@@ -5,6 +5,9 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\SystemRole;
 use App\Models\User;
+use App\Models\SubscriptionPlan;
+use App\Models\FinancialAidSubscription;
+use Carbon\Carbon;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -49,6 +52,38 @@ class RegisteredUserController extends Controller
             'enrolled_school' => $request->enrolled_school,
             'school_year' => $request->school_year,
         ]);
+
+        // Auto-subscribe director accounts to the Free plan (only once per user)
+        try {
+            $role = SystemRole::find($user->systemrole_id);
+            if ($role && strtolower($role->name) === 'director') {
+                // Find the Free plan first
+                $freePlan = SubscriptionPlan::whereRaw('LOWER(plan_name) = ?', ['free'])->first();
+                if ($freePlan) {
+                    // Check if user has EVER had a free plan (active, expired, or pending)
+                    $hasHadFreePlan = FinancialAidSubscription::where('user_id', $user->id)
+                        ->where('plan_id', $freePlan->plan_id)
+                        ->exists();
+                    
+                    if (!$hasHadFreePlan) {
+                        // User has never had a free plan, give them one
+                        $start = Carbon::now()->startOfDay();
+                        $end = (clone $start)->addMonths((int) $freePlan->duration_in_months);
+
+                        FinancialAidSubscription::create([
+                            'user_id' => $user->id,
+                            'plan_id' => $freePlan->plan_id,
+                            'start_date' => $start->toDateString(),
+                            'end_date' => $end->toDateString(),
+                            'status' => 'Active',
+                        ]);
+                    }
+                    // If user has already had a free plan (even if expired), they don't get another one
+                }
+            }
+        } catch (\Throwable $e) {
+            // Swallow errors to avoid breaking registration; consider logging in production
+        }
 
         event(new Registered($user));
 

@@ -27,6 +27,7 @@ class User extends Authenticatable
         'password',
         'status',
         'systemrole_id',
+        'financial_aid_id',
         'age',
         'enrolled_school',
         'school_year',
@@ -60,6 +61,11 @@ class User extends Authenticatable
         return $this->belongsTo(SystemRole::class, 'systemrole_id');
     }
 
+    public function financialAid()
+    {
+        return $this->belongsTo(FinancialAid::class, 'financial_aid_id');
+    }
+
     // Helper methods
     public function isAdmin()
     {
@@ -84,5 +90,40 @@ class User extends Authenticatable
     public function getFullNameAttribute()
     {
         return trim($this->firstname . ' ' . $this->middlename . ' ' . $this->lastname);
+    }
+
+    // Subscription-related methods
+    public function financialAidSubscriptions()
+    {
+        return $this->hasMany(FinancialAidSubscription::class);
+    }
+
+    public function hasHadFreePlan()
+    {
+        $freePlan = SubscriptionPlan::whereRaw('LOWER(plan_name) = ?', ['free'])->first();
+        if (!$freePlan) {
+            return false;
+        }
+        
+        return $this->financialAidSubscriptions()
+            ->where('plan_id', $freePlan->plan_id)
+            ->exists();
+    }
+
+    public function hasActiveSubscription()
+    {
+        return $this->financialAidSubscriptions()
+            ->where('status', 'Active')
+            ->where('end_date', '>=', now()->toDateString())
+            ->exists();
+    }
+
+    public function getCurrentSubscription()
+    {
+        return $this->financialAidSubscriptions()
+            ->with('subscriptionPlan')
+            ->where('status', 'Active')
+            ->where('end_date', '>=', now()->toDateString())
+            ->first();
     }
 }

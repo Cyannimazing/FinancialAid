@@ -14,9 +14,26 @@ class FinancialAidController extends Controller
     /**
      * Display a listing of financial aid facilities.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $facilities = FinancialAid::with(['owner', 'documents'])->get();
+        $perPage = $request->get('per_page', 8); // Default to 8 items per page
+        $facilities = FinancialAid::with(['owner', 'documents'])
+            ->where('isManagable', false) // Only show pending applications
+            ->orderBy('created_at', 'desc')
+            ->paginate($perPage);
+        
+        return response()->json($facilities);
+    }
+
+    /**
+     * Get current user's facilities.
+     */
+    public function myFacilities()
+    {
+        $user = Auth::user();
+        $facilities = FinancialAid::with(['documents'])
+            ->where('user_id', $user->id)
+            ->get();
         return response()->json($facilities);
     }
 
@@ -26,6 +43,7 @@ class FinancialAidController extends Controller
     public function store(Request $request)
     {
         $request->validate([
+            'center_id' => 'required|string|max:50|unique:financial_aid,center_id',
             'center_name' => 'required|string|max:255',
             'longitude' => 'nullable|numeric|between:-180,180',
             'latitude' => 'nullable|numeric|between:-90,90',
@@ -37,14 +55,18 @@ class FinancialAidController extends Controller
 
         $user = Auth::user();
 
-        // Generate unique center_id
-        do {
-            $centerId = 'FAC-' . strtoupper(Str::random(8));
-        } while (FinancialAid::where('center_id', $centerId)->exists());
+        // Check if user already has a facility
+        $existingFacility = FinancialAid::where('user_id', $user->id)->first();
+        if ($existingFacility) {
+            return response()->json([
+                'message' => 'You have already registered a facility. Each user can only register one facility.',
+                'existing_facility' => $existingFacility
+            ], 422);
+        }
 
         $facility = FinancialAid::create([
             'user_id' => $user->id,
-            'center_id' => $centerId,
+            'center_id' => $request->center_id,
             'center_name' => $request->center_name,
             'longitude' => $request->longitude,
             'latitude' => $request->latitude,

@@ -31,9 +31,19 @@ const Navigation = ({ user }) => {
                         {/* Navigation Links */}
                         <div className="hidden space-x-8 sm:-my-px sm:ml-10 sm:flex">
                             <NavLink
-                                href="/dashboard"
-                                active={usePathname() === '/dashboard'}>
+                                href="/admin-dashboard"
+                                active={usePathname() === '/admin-dashboard'}>
                                 Dashboard
+                            </NavLink>
+                            <NavLink
+                                href="/applications"
+                                active={usePathname().startsWith('/applications')}>
+                                Applications
+                            </NavLink>
+                            <NavLink
+                                href="/plan"
+                                active={usePathname().startsWith('/plan')}>
+                                Subscription Plans
                             </NavLink>
                         </div>
                     </div>
@@ -106,9 +116,19 @@ const Navigation = ({ user }) => {
                 <div className="block sm:hidden">
                     <div className="pt-2 pb-3 space-y-1">
                         <ResponsiveNavLink
-                            href="/dashboard"
-                            active={usePathname() === '/dashboard'}>
+                            href="/admin-dashboard"
+                            active={usePathname() === '/admin-dashboard'}>
                             Dashboard
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink
+                            href="/applications"
+                            active={usePathname().startsWith('/applications')}>
+                            Applications
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink
+                            href="/plan"
+                            active={usePathname().startsWith('/plan')}>
+                            Subscription Plans
                         </ResponsiveNavLink>
                     </div>
 

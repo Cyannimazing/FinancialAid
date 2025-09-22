@@ -1,7 +1,7 @@
 'use client'
 
 import { useAuth } from '@/hooks/auth'
-import Navigation from '@/app/(admin)/Navigation'
+import Navigation from '@/app/(staff)/Navigation'
 import Loading from '@/components/Loading'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
@@ -11,15 +11,15 @@ const AppLayout = ({ children }) => {
     const router = useRouter()
 
     useEffect(() => {
-        if (user && user.systemrole_id !== 1) {
-            // Not admin, redirect to appropriate dashboard
+        if (user && user.systemrole_id !== 4) {
+            // Not beneficiary, redirect to appropriate dashboard
             switch(user.systemrole_id) {
+                case 1: // Admin
+                    router.push('/admin-dashboard')
+                    break
                 case 2: // Director
                 case 3: // Employee
                     router.push('/facility-dashboard')
-                    break
-                case 4: // Beneficiary
-                    router.push('/dashboard')
                     break
                 default:
                     router.push('/dashboard')
@@ -31,14 +31,14 @@ const AppLayout = ({ children }) => {
         return <Loading />
     }
 
-    // Only allow admin users
-    if (user.systemrole_id !== 1) {
+    // Only allow beneficiary users
+    if (user.systemrole_id !== 4) {
         return <Loading />
     }
-
     return (
         <div className="min-h-screen bg-gray-100">
             <Navigation user={user} />
+            
 
             <main>{children}</main>
         </div>
